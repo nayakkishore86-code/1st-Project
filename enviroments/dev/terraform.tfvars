@@ -7,4 +7,10 @@ rgs={
         name="kk2-rg"
         location="centralindia"
     }
+
+    rg3={
+        name="kk3-rg"
+        location="centralindia"
+}
+
 }
