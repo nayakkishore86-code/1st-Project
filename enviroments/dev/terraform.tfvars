@@ -13,19 +13,19 @@ rgs = {
 }
 
 vnets = {
-    vnet1={
-        name                ="frontend-vnet-kk"
-  location            = "centralindia"
-  resource_group_name = "kk1-rg"
-  address_space       = ["10.26.0.0/16"]
-    }
+  vnet1 = {
+    name                = "frontend-vnet-kk"
+    location            = "centralindia"
+    resource_group_name = "kk1-rg"
+    address_space       = ["10.26.0.0/16"]
+  }
 
-    vnet2={
-        name                ="backend-vnet-kk"
-  location            = "centralus"
-  resource_group_name = "kk2-rg"
-  address_space       = ["10.27.0.0/16"]
-}
+  vnet2 = {
+    name                = "backend-vnet-kk"
+    location            = "centralus"
+    resource_group_name = "kk2-rg"
+    address_space       = ["10.27.0.0/16"]
+  }
 }
 
 subnets = {
