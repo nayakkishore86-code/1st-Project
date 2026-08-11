@@ -1,8 +1,18 @@
 trigger:
+- task: TerraformTask@5
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    backendServiceArm: '2nd project service'
+    backendAzureRmOverrideSubscriptionID: 'cf4adfd0-252d-4813-b002-f6f2095a23a8'
+    backendAzureRmResourceGroupName: 'cicd_test'
+    backendAzureRmStorageAccountName: 'storagecicd12'
+    backendAzureRmContainerName: 'cicdcontainer'
+    backendAzureRmKey: 'pipeline_key'
 - main
 
 pool:
-  name: KK-pool
+  name: 3rd-pool
 
 variables:
   workingDir: '$(Build.SourcesDirectory)/enviroments/dev'
