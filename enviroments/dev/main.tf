@@ -1,7 +1,15 @@
-resource "azurerm_resource_group" "rgs" {
+module "resource_group" {
+  source = "../../modules/azurerm_resource_group"
+  rgs    = var.rgs
+}
+module "vnet" {
+  depends_on = [module.resource_group]
+  source     = "../../modules/azurerm_vnet"
+  vnets      = var.vnets
 
-    for_each = var.rgs
-    name=each.value.name
-    location=each.value.location
-  
+}
+module "subnet" {
+  depends_on = [module.vnet]
+  source     = "../../modules/azurerm_subnet"
+  subnets    = var.subnets
 }
