@@ -1,3 +1,4 @@
+
 trigger:
 - none
 
@@ -8,21 +9,30 @@ steps:
 
 # Install Terraform
 - task: TerraformInstaller@1
+  displayName: 'Install Terraform'
   inputs:
     terraformVersion: 'latest'
 
 # Verify Terraform Installation
-- powershell: |
-    Write-Host "=================="
-    Write-Host "Terraform Version"
-    Write-Host "=================="
-    terraform version
-
-    Write-Host "=================="
-    Write-Host "Terraform Location"
-    Write-Host "=================="
-    where.exe terraform
+- task: PowerShell@2
   displayName: 'Verify Terraform'
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "=================="
+      Write-Host "Terraform Version"
+      Write-Host "=================="
+      terraform version
+
+      Write-Host "=================="
+      Write-Host "Terraform Location"
+      Write-Host "=================="
+      Get-Command terraform
+
+      Write-Host "=================="
+      Write-Host "PATH"
+      Write-Host "=================="
+      $env:PATH
 
 # Terraform Init
 - task: TerraformTask@5
@@ -30,7 +40,6 @@ steps:
   inputs:
     provider: 'azurerm'
     command: 'init'
-
     workingDirectory: '$(Build.SourcesDirectory)/environments/dev'
 
     backendServiceArm: 'cicd_service'
@@ -46,9 +55,7 @@ steps:
   inputs:
     provider: 'azurerm'
     command: 'plan'
-
     workingDirectory: '$(Build.SourcesDirectory)/environments/dev'
-
     environmentServiceNameAzureRM: 'cicd_service'
 
 # Terraform Apply
@@ -57,8 +64,6 @@ steps:
   inputs:
     provider: 'azurerm'
     command: 'apply'
-
     workingDirectory: '$(Build.SourcesDirectory)/environments/dev'
-
     environmentServiceNameAzureRM: 'cicd_service'
     commandOptions: '-auto-approve'
