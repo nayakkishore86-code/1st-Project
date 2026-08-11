@@ -6,19 +6,59 @@ pool:
 
 steps:
 
+# Install Terraform
 - task: TerraformInstaller@1
   inputs:
-    terraformVersion: latest
+    terraformVersion: 'latest'
 
+# Verify Terraform Installation
 - powershell: |
     Write-Host "=================="
     Write-Host "Terraform Version"
     Write-Host "=================="
-
     terraform version
 
     Write-Host "=================="
-    Write-Host "Where Terraform"
+    Write-Host "Terraform Location"
     Write-Host "=================="
-
     where.exe terraform
+  displayName: 'Verify Terraform'
+
+# Terraform Init
+- task: TerraformTask@5
+  displayName: 'Terraform Init'
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+
+    workingDirectory: '$(Build.SourcesDirectory)/environments/dev'
+
+    backendServiceArm: 'cicd_service'
+    backendAzureRmOverrideSubscriptionID: 'cf4adfd0-252d-4813-b002-f6f2095a23a8'
+    backendAzureRmResourceGroupName: 'cicd_test'
+    backendAzureRmStorageAccountName: 'storagecicd12'
+    backendAzureRmContainerName: 'cicdcontainer'
+    backendAzureRmKey: 'cicd.tfstate'
+
+# Terraform Plan
+- task: TerraformTask@5
+  displayName: 'Terraform Plan'
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+
+    workingDirectory: '$(Build.SourcesDirectory)/environments/dev'
+
+    environmentServiceNameAzureRM: 'cicd_service'
+
+# Terraform Apply
+- task: TerraformTask@5
+  displayName: 'Terraform Apply'
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+
+    workingDirectory: '$(Build.SourcesDirectory)/environments/dev'
+
+    environmentServiceNameAzureRM: 'cicd_service'
+    commandOptions: '-auto-approve'
