@@ -3,7 +3,7 @@ trigger:
 - none
 
 pool:
-  name: deepu
+  name: KK-pool
 
 steps:
 
