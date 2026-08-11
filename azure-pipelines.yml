@@ -1,18 +1,104 @@
-trigger: none
+trigger:
+- main
 
 pool:
   name: KK-pool
 
-steps:
+variables:
+  workingDir: '$(Build.SourcesDirectory)/enviroments/dev'
 
-- task: TerraformInstaller@1
-  inputs:
-    terraformVersion: '1.15.8'
+stages:
 
-- powershell: |
-    terraform version
+#==========================
+# Stage 1 - Terraform Init
+#==========================
+- stage: Terraform_Init
+  displayName: "Terraform Init"
 
-    cd "$(Build.SourcesDirectory)\environments\dev"
+  jobs:
+  - job: Init
+    displayName: "Initialize Backend"
 
-    terraform init
-  displayName: 'Terraform Init using PowerShell'
+    steps:
+
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTask@5
+      displayName: Terraform Init
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(workingDir)'
+
+        backendServiceArm: 'cicd_service'
+        backendAzureRmResourceGroupName: 'cicd_test'
+        backendAzureRmStorageAccountName: 'storagecicd12'
+        backendAzureRmContainerName: 'cicdcontainer'
+        backendAzureRmKey: 'cicd.tfstate'
+
+#==========================
+# Stage 2 - Terraform Plan
+#==========================
+- stage: Terraform_Plan
+  displayName: "Terraform Plan"
+
+  dependsOn: Terraform_Init
+
+  jobs:
+  - job: Plan
+    displayName: "Terraform Plan"
+
+    steps:
+
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTask@5
+      displayName: Terraform Plan
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(workingDir)'
+        environmentServiceNameAzureRM: 'cicd_service'
+        commandOptions: '-out=tfplan'
+
+#==========================
+# Stage 3 - Terraform Apply
+#==========================
+- stage: Terraform_Apply
+  displayName: "Terraform Apply"
+
+  dependsOn: Terraform_Plan
+
+  jobs:
+  - deployment: Apply
+    displayName: "Terraform Apply"
+
+    environment: Dev
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - checkout: self
+
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: 'latest'
+
+          - task: TerraformTask@5
+            displayName: Terraform Apply
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(workingDir)'
+              environmentServiceNameAzureRM: 'cicd_service'
+              commandOptions: '-auto-approve'
