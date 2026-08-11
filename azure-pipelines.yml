@@ -4,123 +4,19 @@ trigger:
 pool:
   name: Nayak-pool
 
-stages:
+steps:
 
-#=========================================================
-# Stage-1 : Validation
-#=========================================================
+- task: TerraformInstaller@1
+  inputs:
+    terraformVersion: 'latest'
 
-- stage: Validation
-  displayName: "Terraform Validation"
+- powershell: |
+    Get-Command terraform
+    terraform version
 
-  jobs:
-  - job: Validate
-    displayName: "Terraform Validate Job"
+    Write-Host "PWD:"
+    Get-Location
 
-    steps:
-
-    - checkout: self
-
-    - task: TerraformInstaller@1
-      displayName: "Install Terraform"
-      inputs:
-        terraformVersion: 'latest'
-
-    - task: TerraformTask@5
-      displayName: "Terraform Init"
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/environments/dev'
-        backendServiceArm: 'cicd_service'
-        backendAzureRmResourceGroupName: 'cicd_test'
-        backendAzureRmStorageAccountName: 'storagecicd12'
-        backendAzureRmContainerName: 'cicdcontainer'
-        backendAzureRmKey: 'practice.tfstate'
-
-    - task: TerraformTask@5
-      displayName: "Terraform Validate"
-      inputs:
-        provider: 'azurerm'
-        command: 'validate'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/environments/dev'
-
-#=========================================================
-# Stage-2 : Plan
-#=========================================================
-
-- stage: Plan
-  displayName: "Terraform Plan"
-  dependsOn: Validation
-
-  jobs:
-  - job: Plan
-    displayName: "Terraform Plan Job"
-
-    steps:
-
-    - checkout: self
-
-    - task: TerraformInstaller@1
-      displayName: "Install Terraform"
-      inputs:
-        terraformVersion: 'latest'
-
-    - task: TerraformTask@5
-      displayName: "Terraform Init"
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/environments/dev'
-        backendServiceArm: 'cicd_service'
-        backendAzureRmResourceGroupName: 'cicd_test'
-        backendAzureRmStorageAccountName: 'storagecicd12'
-        backendAzureRmContainerName: 'cicdcontainer'
-        backendAzureRmKey: 'practice.tfstate'
-
-    - task: TerraformTask@5
-      displayName: "Terraform Plan"
-      inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/environments/dev'
-
-#=========================================================
-# Stage-3 : Apply
-#=========================================================
-
-- stage: Apply
-  displayName: "Terraform Apply"
-  dependsOn: Plan
-
-  jobs:
-  - job: Apply
-    displayName: "Terraform Apply Job"
-
-    steps:
-
-    - checkout: self
-
-    - task: TerraformInstaller@1
-      displayName: "Install Terraform"
-      inputs:
-        terraformVersion: 'latest'
-
-    - task: TerraformTask@5
-      displayName: "Terraform Init"
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/environments/dev'
-        backendServiceArm: 'cicd_service'
-        backendAzureRmResourceGroupName: 'cicd_test'
-        backendAzureRmStorageAccountName: 'storagecicd12'
-        backendAzureRmContainerName: 'cicdcontainer'
-        backendAzureRmKey: 'practice.tfstate'
-
-    - task: TerraformTask@5
-      displayName: "Terraform Apply"
-      inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/environments/dev'
+    Write-Host "Files:"
+    Get-ChildItem
+  displayName: "Verify Terraform"
