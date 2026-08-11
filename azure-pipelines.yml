@@ -3,7 +3,7 @@ trigger:
   inputs:
     provider: 'azurerm'
     command: 'init'
-    backendServiceArm: '2nd project service'
+    backendServiceArm: 'kk service'
     backendAzureRmOverrideSubscriptionID: 'cf4adfd0-252d-4813-b002-f6f2095a23a8'
     backendAzureRmResourceGroupName: 'cicd_test'
     backendAzureRmStorageAccountName: 'storagecicd12'
@@ -12,7 +12,7 @@ trigger:
 - main
 
 pool:
-  name: 3rd-pool
+  name: August-pool
 
 variables:
   workingDir: '$(Build.SourcesDirectory)/enviroments/dev'
