@@ -1,114 +1,176 @@
 trigger:
-- task: TerraformTask@5
-  inputs:
-    provider: 'azurerm'
-    command: 'init'
-    backendServiceArm: 'kk service'
-    backendAzureRmOverrideSubscriptionID: 'cf4adfd0-252d-4813-b002-f6f2095a23a8'
-    backendAzureRmResourceGroupName: 'cicd_test'
-    backendAzureRmStorageAccountName: 'storagecicd12'
-    backendAzureRmContainerName: 'cicdcontainer'
-    backendAzureRmKey: 'pipeline_key'
 - main
 
 pool:
   name: August-pool
 
 variables:
-  workingDir: '$(Build.SourcesDirectory)/enviroments/dev'
+  workingDir: '$(Build.SourcesDirectory)/envirnment/dev'
+  serviceConnection: 'kk service'
 
 stages:
 
-#==========================
-# Stage 1 - Terraform Init
-#==========================
+#==================================
+# Stage 1: Terraform Init
+#==================================
 - stage: Terraform_Init
-  displayName: "Terraform Init"
-
+  displayName: "1. Terraform Init"
   jobs:
   - job: Init
-    displayName: "Initialize Backend"
-
+    displayName: "Initialize Terraform Backend"
     steps:
-
     - checkout: self
 
     - task: TerraformInstaller@1
+      displayName: "Install Terraform"
       inputs:
         terraformVersion: 'latest'
 
     - task: TerraformTask@5
-      displayName: Terraform Init
+      displayName: "Terraform Init"
       inputs:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: '$(workingDir)'
+        backendServiceArm: '$(serviceConnection)'
+        backendAzureRmResourceGroupName: 'KK-rg'
+        backendAzureRmStorageAccountName: 'kkstorage12345'
+        backendAzureRmContainerName: 'kkcontainer'
+        backendAzureRmKey: 'kk.tfstate'
 
-        backendServiceArm: 'cicd_service'
-        backendAzureRmResourceGroupName: 'cicd_test'
-        backendAzureRmStorageAccountName: 'storagecicd12'
-        backendAzureRmContainerName: 'cicdcontainer'
-        backendAzureRmKey: 'cicd.tfstate'
-
-#==========================
-# Stage 2 - Terraform Plan
-#==========================
-- stage: Terraform_Plan
-  displayName: "Terraform Plan"
-
+#==================================
+# Stage 2: Terraform Validate
+#==================================
+- stage: Terraform_Validate
+  displayName: "2. Terraform Validate"
   dependsOn: Terraform_Init
-
   jobs:
-  - job: Plan
-    displayName: "Terraform Plan"
-
+  - job: Validate
+    displayName: "Validate Terraform Configuration"
     steps:
-
     - checkout: self
 
     - task: TerraformInstaller@1
+      displayName: "Install Terraform"
       inputs:
         terraformVersion: 'latest'
 
     - task: TerraformTask@5
-      displayName: Terraform Plan
+      displayName: "Terraform Init"
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(workingDir)'
+        backendServiceArm: '$(serviceConnection)'
+        backendAzureRmResourceGroupName: 'KK-rg'
+        backendAzureRmStorageAccountName: 'kkstorage12345'
+        backendAzureRmContainerName: 'kkcontainer'
+        backendAzureRmKey: 'kk.tfstate'
+
+    - task: TerraformTask@5
+      displayName: "Terraform Validate"
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+        workingDirectory: '$(workingDir)'
+
+#==================================
+# Stage 3: Terraform Plan
+#==================================
+- stage: Terraform_Plan
+  displayName: "3. Terraform Plan"
+  dependsOn: Terraform_Validate
+  jobs:
+  - job: Plan
+    displayName: "Generate Terraform Execution Plan"
+    steps:
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      displayName: "Install Terraform"
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTask@5
+      displayName: "Terraform Init"
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(workingDir)'
+        backendServiceArm: '$(serviceConnection)'
+        backendAzureRmResourceGroupName: 'KK-rg'
+        backendAzureRmStorageAccountName: 'kkstorage12345'
+        backendAzureRmContainerName: 'kkcontainer'
+        backendAzureRmKey: 'kk.tfstate'
+
+    - task: TerraformTask@5
+      displayName: "Terraform Plan"
       inputs:
         provider: 'azurerm'
         command: 'plan'
         workingDirectory: '$(workingDir)'
-        environmentServiceNameAzureRM: 'cicd_service'
-        commandOptions: '-out=tfplan'
+        environmentServiceNameAzureRM: '$(serviceConnection)'
+        commandOptions: '-out=$(Build.ArtifactStagingDirectory)/tfplan'
 
-#==========================
-# Stage 3 - Terraform Apply
-#==========================
+    - publish: $(Build.ArtifactStagingDirectory)/tfplan
+      artifact: tfplan
+      displayName: "Publish Terraform Plan Artifact"
+
+#==================================
+# Stage 4: Manual Approval & Apply
+#==================================
 - stage: Terraform_Apply
-  displayName: "Terraform Apply"
-
+  displayName: "4. Manual Approval & Apply"
   dependsOn: Terraform_Plan
-
   jobs:
+  # Manual Approval Gate (Server Job)
+  - job: ManualApproval
+    displayName: "Manual Approval Gate"
+    pool: server
+    steps:
+    - task: ManualValidation@0
+      timeoutInMinutes: 1440 # 24 hours
+      inputs:
+        notifyUsers: ''
+        instructions: 'Please review the generated terraform plan before approving execution.'
+
+  # Terraform Apply Deployment Job
   - deployment: Apply
     displayName: "Terraform Apply"
-
-    environment: Dev
-
+    dependsOn: ManualApproval
+    environment: 'production'
     strategy:
       runOnce:
         deploy:
           steps:
-
           - checkout: self
 
           - task: TerraformInstaller@1
+            displayName: "Install Terraform"
             inputs:
               terraformVersion: 'latest'
 
+          - download: current
+            artifact: tfplan
+            displayName: "Download Terraform Plan Artifact"
+
           - task: TerraformTask@5
-            displayName: Terraform Apply
+            displayName: "Terraform Init"
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(workingDir)'
+              backendServiceArm: '$(serviceConnection)'
+              backendAzureRmResourceGroupName: 'KK-rg'
+              backendAzureRmStorageAccountName: 'kkstorage12345'
+              backendAzureRmContainerName: 'kkcontainer'
+              backendAzureRmKey: 'kk.tfstate'
+
+          - task: TerraformTask@5
+            displayName: "Terraform Apply"
             inputs:
               provider: 'azurerm'
               command: 'apply'
               workingDirectory: '$(workingDir)'
-              environmentServiceNameAzureRM: 'cicd_service'
-              commandOptions: '-auto-approve'
+              environmentServiceNameAzureRM: '$(serviceConnection)'
+              commandOptions: '$(Pipeline.Workspace)/tfplan/tfplan'
