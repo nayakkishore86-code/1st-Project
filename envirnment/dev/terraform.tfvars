@@ -8,7 +8,10 @@ rgs = {
     location = "centralindia"
   }
 
-
+ rg3 = {
+    name     = "kk3-rg"
+    location = "eastus"
+ }
 
 }
 
