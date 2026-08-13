@@ -6,7 +6,7 @@ pool:
 
 variables:
   workingDir: '$(Build.SourcesDirectory)/envirnment/dev'
-  serviceConnection: 'kk service'
+  serviceConnection: 'kkservice'
 
 stages:
 
