@@ -1,6 +1,6 @@
 rgs = {
   rg1 = {
-    name     = "kk-rg"
+    name     = "kk1-rg"
     location = "centralindia"
   }
   rg2 = {
@@ -44,4 +44,5 @@ subnets = {
     address_prefixes     = ["10.27.1.0/24"]
   }
 }
+
 
